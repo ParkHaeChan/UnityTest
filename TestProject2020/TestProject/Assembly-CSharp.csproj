@@ -249,6 +249,9 @@
     <Reference Include="UnityEditor">
       <HintPath>C:\Program Files\Unity\Hub\Editor\2020.1.1f1\Editor\Data\Managed\UnityEditor.dll</HintPath>
     </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe">
+      <HintPath>Assets\Plugins\EuNet\DLL\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
     <Reference Include="netstandard">
       <HintPath>C:\Program Files\Unity\Hub\Editor\2020.1.1f1\Editor\Data\NetStandard\ref\2.0.0\netstandard.dll</HintPath>
     </Reference>
@@ -677,6 +680,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="EuNet.csproj">
+      <Project>{3B784547-A92A-BDBB-C16D-8E03AA42893C}</Project>
+      <Name>EuNet</Name>
+    </ProjectReference>
+    <ProjectReference Include="EuNet.Editor.csproj">
+      <Project>{CDA5A116-7A83-D2C3-E9DD-63B94C0446A9}</Project>
+      <Name>EuNet.Editor</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="GenerateTargetFrameworkMonikerAttribute" />

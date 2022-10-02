@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <Import Project="$(SolutionDir)src\EuNet.CodeGenerator.Templates\EuNet.CodeGenerator.Templates.Common.targets" Condition="Exists('$(SolutionDir)src\EuNet.CodeGenerator.Templates\EuNet.CodeGenerator.Templates.Common.targets') And '$(BuildingInsideVisualStudio)' == 'true'" />
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\EuNet.Core\EuNet.Core.csproj" />
+    <ProjectReference Include="..\..\src\EuNet.Rpc\EuNet.Rpc.csproj" />
+    <ProjectReference Include="..\..\src\EuNet.UnityShims\EuNet.UnityShims.csproj" />
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(BuildingInsideVisualStudio)' == 'true'">
+    <Exec Command="xcopy /s /e /y /exclude:$(ProjectDir)..\exclude.txt $(ProjectDir)*.cs $(ProjectDir)\..\..\src\EuNet.Unity\Assets\Scripts\Rpc\&#xD;&#xA;" />
+  </Target>
+
+</Project>
