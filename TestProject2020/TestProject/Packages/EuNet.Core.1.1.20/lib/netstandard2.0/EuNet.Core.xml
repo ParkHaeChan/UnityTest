@@ -1,0 +1,1030 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>EuNet.Core</name>
+    </assembly>
+    <members>
+        <member name="T:EuNet.Core.ChannelBase">
+            <summary>
+            채널의 베이스 로직을 구현한 클래스
+            </summary>
+        </member>
+        <member name="M:EuNet.Core.ChannelBase.ReadPacket(System.Byte[],System.Int32,EuNet.Core.IPacketFilter)">
+            <summary>
+            버퍼를 입력하여 패킷 단위로 읽어서 처리합니다.
+            </summary>
+            <param name="buffer">읽을 버퍼 (보통 채널을 통해 받은 데이터 버퍼)</param>
+            <param name="totalReceivedSize">버퍼에서 사용되는 크기</param>
+            <param name="packetFilter">패킷필터</param>
+            <returns>처리가 완료된 buffer의 offset. 에러가 난 경우 -1</returns>
+        </member>
+        <member name="T:EuNet.Core.IChannel">
+            <summary>
+            채널 인터페이스
+            통신을 위한 채널을 만드는데 쓰인다
+            </summary>
+        </member>
+        <member name="M:EuNet.Core.IChannel.Init(System.Threading.CancellationTokenSource)">
+            <summary>
+            초기화를 한다. 
+            채널은 재활용될 수 있으므로 재활용을 고려하여야 한다
+            </summary>
+            <param name="cts">취소 토큰소스. IChannel.Close 되었을때 CancellationTokenSource.Cancel을 호출함</param>
+        </member>
+        <member name="M:EuNet.Core.IChannel.Close">
+            <summary>
+            리소스를 해제한다. 
+            채널은 재활용될 수 있으므로 재활용을 고려하여야 한다
+            </summary>
+        </member>
+        <member name="M:EuNet.Core.IChannel.Update(System.Int32)">
+            <summary>
+            주기적인 업데이트 호출
+            외부에서 주기적으로 (ex.30ms) 호출하여 내부로직을 처리해야 함
+            </summary>
+            <param name="elapsedTime">기존 업데이트로부터 지난 시간. 밀리세컨드(ms)</param>
+            <returns></returns>
+        </member>
+        <member name="M:EuNet.Core.IChannel.SendAsync(EuNet.Core.NetPacket)">
+            <summary>
+            패킷을 전송. 내부적으로만 사용
+            </summary>
+            <param name="poolingPacket">보낼패킷. NetPool.PacketPool.Alloc 으로 할당하여 사용하세요</param>
+        </member>
+        <member name="P:EuNet.Core.IChannel.PacketReceived">
+            <summary>
+            받은 패킷을 처리할 액션
+            </summary>
+        </member>
+        <member name="T:EuNet.Core.IChannelOption">
+            <summary>
+            채널 옵션 인터페이스
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.IChannelOption.PacketFilter">
+            <summary>
+            패킷 필터
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.IChannelOption.PingInterval">
+            <summary>
+            주기적으로 Ping 을 보낼 간격 (ms)
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.IChannelOption.MtuInterval">
+            <summary>
+            주기적으로 Mtu 를 보낼 간격 (ms). Mtu 체크가 끝나면 보내지 않는다
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.IChannelOption.RudpDisconnectTimeout">
+            <summary>
+            Reliable Udp 패킷을 보내고 RudpDisconnectTimeout 시간동안 Ack 패킷을 받지 못하면 접속이 해제된다 (ms)
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.IChannelOption.IsCheckAlive">
+            <summary>
+            내장된 CheckAlive 기능의 사용 여부 (TCP Only)
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.IChannelOption.CheckAliveInterval">
+            <summary>
+            주기적으로 CheckAlive 패킷을 보낼 간격 (ms)
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.IChannelOption.CheckAliveTimeout">
+            <summary>
+            이 시간 동안 CheckAlive를 포함한 어떠한 패킷도 오지 않으면 접속이 해제된다 (ms)
+            </summary>
+        </member>
+        <member name="T:EuNet.Core.UdpChannel">
+            <summary>
+            UDP 채널. 다양한 UDP 채널들을 관리한다.
+            </summary>
+        </member>
+        <member name="T:EuNet.Core.UdpChannel.SendMode">
+            <summary>
+            보내기 모드
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.UdpChannel.SendMode.Immediately">
+            <summary>
+            즉시 보내기 (릴레이 지원 안됨)
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.UdpChannel.SendMode.Buffered">
+            <summary>
+            버퍼를 통해서 보내기 (30ms 정도 지연이 생김) (릴레이는 버퍼만 지원됨) 
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.UdpChannel.LocalEndPoint">
+            <summary>
+            세션이 해당하는 로컬의 주소 (NAT의 경우 NAT할당 주소)
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.UdpChannel.RemoteEndPoint">
+            <summary>
+            세션의 원격주소 (서버에서 획득한 외부주소)
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.UdpChannel.TempEndPoint">
+            <summary>
+            홀펀칭이나 기타 기능에서 임시로 받은 주소
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.UdpChannel.RelayEndPoint">
+            <summary>
+            릴레이 서버 주소. 홀펀칭에 실패하면 릴레이됨.
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.UdpChannel._punchedEndPoint">
+            <summary>
+            최종적으로 홀펀칭된 원격주소 (홀펀칭중에는 UDP로 내가 받은 상대방주소)
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.UdpChannel.Mtu">
+            <summary>
+            Maximum Transmission Unit
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.UdpChannel.ResendDelay">
+            <summary>
+            RUDP에서 ACK를 받지 못하여 다시 데이터를 전송하는 시간 (ms)
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.UdpChannel.IsRunMtu">
+            <summary>
+            현재 MTU를 체크중인지 여부
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.UdpChannel.IsRunPing">
+            <summary>
+            현재 PING을 체크중인지 여부
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.UdpChannel.Ping">
+            <summary>
+            PING (ms)
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.UdpChannel._remoteTickDelta">
+            <summary>
+            원격지의 현재과 로컬의 현지시간과의 tick차이
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.UdpChannel.RemoteUtcTime">
+            <summary>
+            계산하여 추측된 원격지의 현재 시간. 동기화를 위해 필요
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.UdpChannel._relaySessionId">
+            <summary>
+            릴레이되어야 할 세션아이디 (서버의 경우 0이어야 함)
+            </summary>
+        </member>
+        <member name="T:EuNet.Core.P2pMemberBase">
+            <summary>
+            P2P 멤버의 기본 클래스
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.P2pMemberBase.Session">
+            <summary>
+            세션. 데이터 전송을 위해서 사용됨
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.P2pMemberBase.SessionId">
+            <summary>
+            세션아이디. 없다면 ushort.MaxValue
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.P2pMemberBase.Ping">
+            <summary>
+            핑. 없다면 int.MaxValue
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.P2pMemberBase.MasterPriority">
+            <summary>
+            마스터 우선순위
+            마스터 자동선정 때 사용함.
+            다른 P2P 멤버들과 우선순위를 비교함. (우선순위가 가장 중요하며, 같다면 Ping을 비교함)
+            </summary>
+        </member>
+        <member name="M:EuNet.Core.P2pMemberBase.Init">
+            <summary>
+            재사용을 위한 초기화
+            </summary>
+        </member>
+        <member name="M:EuNet.Core.P2pMemberBase.Close">
+            <summary>
+            리소스를 제거함
+            </summary>
+        </member>
+        <member name="M:EuNet.Core.P2pMemberBase.SetSession(EuNet.Core.ISession)">
+            <summary>
+            데이터 전송을 위한 세션을 지정함
+            </summary>
+            <param name="session"></param>
+        </member>
+        <member name="M:EuNet.Core.P2pMemberBase.SendAsync(System.Byte[],System.Int32,System.Int32,EuNet.Core.DeliveryMethod)">
+            <summary>
+            데이터를 전송함
+            </summary>
+            <param name="data">보낼 데이터 버퍼</param>
+            <param name="offset">보낼 데이터 버퍼 오프셋</param>
+            <param name="length">보낼 데이터 길이</param>
+            <param name="deliveryMethod">전송 방법</param>
+        </member>
+        <member name="M:EuNet.Core.P2pMemberBase.SendAsync(EuNet.Core.NetDataWriter,EuNet.Core.DeliveryMethod)">
+            <summary>
+            데이터를 전송함
+            </summary>
+            <param name="dataWriter">보낼 데이터를 가지고 있는 NetDataWriter</param>
+            <param name="deliveryMethod">전송 방법</param>
+        </member>
+        <member name="T:EuNet.Core.IPacketFilter">
+            <summary>
+            패킷을 가공하는 필터 클래스.
+            암호화, 검증, 압축 등의 작업을 할 수 있음.
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.IPacketFilter.NextFilter">
+            <summary>
+            필터 처리 후 사용될 다음 필터
+            </summary>
+        </member>
+        <member name="M:EuNet.Core.IPacketFilter.Encode(EuNet.Core.NetPacket)">
+            <summary>
+            보내기 전에 데이터를 가공한다.
+            풀링패킷을 받으며, 반드시 풀링패킷을 리턴해야함.
+            암호화, 검증, 압축 등의 작업을 할 수 있음.
+            </summary>
+            <param name="packet">수정되지 않은 원본 풀링패킷</param>
+            <returns>Encode된 풀링패킷</returns>
+        </member>
+        <member name="M:EuNet.Core.IPacketFilter.Decode(EuNet.Core.NetPacket)">
+            <summary>
+            받은 후 데이터를 사용할 수 있게 가공한다.
+            풀링패킷을 받으며, 반드시 풀링패킷을 리턴해야함.
+            암호화, 검증, 압축 등의 작업을 할 수 있음.
+            </summary>
+            <param name="packet">Encode된 풀링패킷</param>
+            <returns>원본상태로 복구된 풀링패킷</returns>
+        </member>
+        <member name="T:EuNet.Core.TeaPacketFilter">
+            <summary>
+            TEA 암호화와 Checksum 으로 검증하는 패킷필터
+            </summary>
+        </member>
+        <member name="T:EuNet.Core.XorPacketFilter">
+            <summary>
+            XOR 암호화와 Checksum 으로 검증하는 패킷필터
+            </summary>
+        </member>
+        <member name="T:EuNet.Core.NetDataReader">
+            <summary>
+            데이터를 읽는 클래스
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetDataReader.Capacity">
+            <summary>
+            총 버퍼 크기 (사용되는 양과 관계없음)
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetDataReader.Data">
+            <summary>
+            버퍼 배열
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetDataReader.Offset">
+            <summary>
+            데이터를 읽을 오프셋. 오프셋부터 데이터를 읽기 시작함.
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetDataReader.EndOffset">
+            <summary>
+            버퍼에서 읽을 수 있는 마지막 오프셋
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetDataReader.DataSize">
+            <summary>
+            읽을 수 있는 총 데이터 사이즈
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetDataReader.IsNull">
+            <summary>
+            버퍼가 NULL인지 여부
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetDataReader.Position">
+            <summary>
+            현재 읽고 있는 Position (offset)
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetDataReader.EndOfData">
+            <summary>
+            읽을 수 있는 마지막 부분에 도달여부
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetDataReader.AvailableBytes">
+            <summary>
+            읽을 수 있는 남은 총 바이트
+            </summary>
+        </member>
+        <member name="T:EuNet.Core.NetDataWriter">
+            <summary>
+            데이터를 작성하는 클래스
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetDataWriter.Capacity">
+            <summary>
+            총 버퍼 크기 (사용되는 양과 관계없음)
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetDataWriter.Data">
+            <summary>
+            버퍼 배열
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetDataWriter.Length">
+            <summary>
+            현재 쓰여진 버퍼 크기 (사용된 크기)
+            </summary>
+        </member>
+        <member name="T:EuNet.Core.NetDataWriterPool">
+            <summary>
+            NetDataWriter 를 재활용하기 위한 풀
+            </summary>
+        </member>
+        <member name="M:EuNet.Core.NetDataWriterPool.#ctor(System.Int32)">
+            <summary>
+            생성자
+            </summary>
+            <param name="maxCount">풀링될 최대 개수. 최대 개수에 도달하면 풀링되지 않고 버려진다</param>
+        </member>
+        <member name="M:EuNet.Core.NetDataWriterPool.Alloc">
+            <summary>
+            풀에서 NetDataWriter 를 가져온다
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:EuNet.Core.NetDataWriterPool.Use(System.Action{EuNet.Core.NetDataWriter})">
+            <summary>
+            할당과 해제를 자동으로하여 편리하게 사용할 수 있는 함수
+            Action을 선언하고 완료가 되면 자동으로 풀링된 NetDataWriter 가 해제된다
+            </summary>
+            <param name="action"></param>
+        </member>
+        <member name="T:EuNet.Core.NetPacket">
+            <summary>
+            패킷 클래스
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetPacket.RawData">
+            <summary>
+            버퍼
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetPacket.MaxTcpPacketSize">
+            <summary>
+            TCP 패킷 최대 크기. 채널에 할당되는 버퍼의 크기에 영향을 주므로 크면 메모리 사용이 커짐.
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetPacket.HeaderSize">
+            <summary>
+            기본 헤더 사이즈
+            0~1 : 패킷 사이즈
+            2 : PacketProperty , DeliveryMethod , IsFragmented
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetPacket.UserDataHeaderSize">
+            <summary>
+            유저 데이터 헤더 사이즈
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetPacket.FragmentHeaderSize">
+            <summary>
+            큰 패킷을 분할하여 보낼때 헤더 사이즈
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetPacket.Size">
+            <summary>
+            패킷 크기 (버퍼의 크기는 아님. 사용된 크기만 해당)
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetPacket.Property">
+            <summary>
+            패킷 특성
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetPacket.DeliveryMethod">
+            <summary>
+            전송 방법
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetPacket.IsFragmented">
+            <summary>
+            분할된 패킷여부
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetPacket.Sequence">
+            <summary>
+            RUDP 에서 순서를 보장하기 위해서 사용하는 시퀀스
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetPacket.P2pSessionId">
+            <summary>
+            P2P 또는 Relay 사용시 세션 아이디 (아닐 경우 0)
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetPacket.FragmentId">
+            <summary>
+            UDP 분할패킷 아이디
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetPacket.FragmentPart">
+            <summary>
+            UDP 분할패킷 파트
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetPacket.FragmentsTotal">
+            <summary>
+            UDP 분할패킷의 분할된 총 개수
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetPacket.SessionIdForConnection">
+            <summary>
+            TCP, UDP 연결 요청, 응답때 사용될 세션아이디
+            </summary>
+        </member>
+        <member name="M:EuNet.Core.NetPacket.GetHeaderSize">
+            <summary>
+            헤더 사이즈를 구함
+            </summary>
+            <returns>패킷의 헤더 사이즈</returns>
+        </member>
+        <member name="T:EuNet.Core.PacketProperty">
+            <summary>
+            패킷 특성
+            0x0F 영역만 사용하므로 (0~15)까지만 사용가능
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.PacketProperty.UserData">
+            <summary>
+            유저 데이터 패킷
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.PacketProperty.Request">
+            <summary>
+            요청
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.PacketProperty.ViewRequest">
+            <summary>
+            P2P의 NetView 요청
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.PacketProperty.AliveCheck">
+            <summary>
+            Alive Check
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.PacketProperty.JoinP2p">
+            <summary>
+            P2P 그룹에 가입
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.PacketProperty.LeaveP2p">
+            <summary>
+            P2P 그룹에서 떠남
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.PacketProperty.ChangeP2pMaster">
+            <summary>
+            P2P 마스터가 변경됨
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.PacketProperty.HolePunchingStart">
+            <summary>
+            P2P 홀펀칭 시작패킷 (홀펀칭 시도패킷)
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.PacketProperty.HolePunchingEnd">
+            <summary>
+            P2P 홀펀칭 마무리패킷 (이 패킷을 받으면 홀펀칭 완료)
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.PacketProperty.Ack">
+            <summary>
+            RUDP Ack
+            UDP Buffered Send를 이용하지 않고 즉시 보낸다.
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.PacketProperty.Ping">
+            <summary>
+            Ping
+            UDP Buffered Send를 이용하지 않고 즉시 보낸다.
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.PacketProperty.Pong">
+            <summary>
+            Ping 에 대한 응답
+            UDP Buffered Send를 이용하지 않고 즉시 보낸다.
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.PacketProperty.RequestConnection">
+            <summary>
+            연결 요청
+            UDP Buffered Send를 이용하지 않고 즉시 보낸다.
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.PacketProperty.ResponseConnection">
+            <summary>
+            연결 응답
+            UDP Buffered Send를 이용하지 않고 즉시 보낸다.
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.PacketProperty.MtuCheck">
+            <summary>
+            Mtu Check
+            UDP Buffered Send를 이용하지 않고 즉시 보낸다.
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.PacketProperty.MtuOk">
+            <summary>
+            Mtu Ok
+            UDP Buffered Send를 이용하지 않고 즉시 보낸다.
+            </summary>
+        </member>
+        <member name="T:EuNet.Core.ISession">
+            <summary>
+            세션 인터페이스
+            세션은 접속을 단위로 하나씩 생성되며, 채널을 가집니다
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.ISession.SessionId">
+            <summary>
+            세션 고유 아이디
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.ISession.TcpChannel">
+            <summary>
+            Tcp Channel
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.ISession.UdpChannel">
+            <summary>
+            Udp Channel
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.ISession.State">
+            <summary>
+            현재 채널 상태
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.ISession.SessionRequest">
+            <summary>
+            세션 요청에 대한 처리기
+            </summary>
+        </member>
+        <member name="M:EuNet.Core.ISession.Init(EuNet.Core.SessionInitializeInfo)">
+            <summary>
+            세션을 초기화 한다
+            세션은 재활용될 수 있으므로 재활용을 고려하여야 한다
+            </summary>
+            <param name="info">초기화시 정보</param>
+        </member>
+        <member name="M:EuNet.Core.ISession.Close">
+            <summary>
+            세션을 닫는다
+            세션은 재활용될 수 있으므로 재활용을 고려하여야 한다
+            </summary>
+        </member>
+        <member name="M:EuNet.Core.ISession.Update(System.Int32)">
+            <summary>
+            주기적인 업데이트 호출
+            외부에서 주기적으로 (ex.30ms) 호출하여 내부로직을 처리해야 함
+            </summary>
+            <param name="elapsedTime">기존 업데이트로부터 지난 시간. 밀리세컨드(ms)</param>
+        </member>
+        <member name="M:EuNet.Core.ISession.SendAsync(System.Byte[],System.Int32,System.Int32,EuNet.Core.DeliveryMethod)">
+            <summary>
+            데이터를 전송함
+            </summary>
+            <param name="data">보낼 데이터 버퍼</param>
+            <param name="offset">보낼 데이터 버퍼 오프셋</param>
+            <param name="length">보낼 데이터 길이</param>
+            <param name="deliveryMethod">전송 방법</param>
+        </member>
+        <member name="M:EuNet.Core.ISession.SendAsync(EuNet.Core.NetDataWriter,EuNet.Core.DeliveryMethod)">
+            <summary>
+            데이터를 전송함
+            </summary>
+            <param name="dataWriter">보낼 데이터를 가지고 있는 NetDataWriter</param>
+            <param name="deliveryMethod">전송 방법</param>
+        </member>
+        <member name="M:EuNet.Core.ISession.SendRawAsync(EuNet.Core.NetPacket,EuNet.Core.DeliveryMethod)">
+            <summary>
+            패킷을 저수준에서 그대로 전송. 내부에서만 사용.
+            </summary>
+            <param name="poolingPacket">보낼패킷. NetPool.PacketPool.Alloc 으로 할당하여 사용하세요</param>
+            <param name="deliveryMethod">전송 방법</param>
+        </member>
+        <member name="M:EuNet.Core.ISession.RequestAsync(System.Byte[],System.Int32,System.Int32,EuNet.Core.DeliveryMethod,System.Nullable{System.TimeSpan})">
+            <summary>
+            요청을 보내고 답을 기다립니다.
+            </summary>
+            <param name="data">보낼 데이터 버퍼</param>
+            <param name="offset">보낼 데이터 버퍼 오프셋</param>
+            <param name="length">보낼 데이터 길이</param>
+            <param name="deliveryMethod">전송 방법</param>
+            <param name="timeout">답을 기다리는 시간</param>
+            <returns>요청에 대한 답 (데이터)</returns>
+        </member>
+        <member name="M:EuNet.Core.ISession.RequestAsync(EuNet.Core.NetDataWriter,EuNet.Core.DeliveryMethod,System.Nullable{System.TimeSpan})">
+            <summary>
+            요청을 보내고 답을 기다립니다.
+            </summary>
+            <param name="dataWriter">보낼 데이터를 가지고 있는 NetDataWriter</param>
+            <param name="deliveryMethod">전송 방법</param>
+            <param name="timeout">답을 기다리는 시간</param>
+            <returns>요청에 대한 답 (데이터)</returns>
+        </member>
+        <member name="M:EuNet.Core.ISession.OnReceive(EuNet.Core.NetDataReader)">
+            <summary>
+            데이터를 받음. 데이터 처리가 끝날때까지 기다릴 수 있는 비동기 메서드
+            </summary>
+            <param name="dataReader">받은 데이터</param>
+        </member>
+        <member name="M:EuNet.Core.ISession.OnError(System.Exception)">
+            <summary>
+            에러가 발생되었음
+            </summary>
+            <param name="exception">예외</param>
+        </member>
+        <member name="T:EuNet.Core.ISessionFactory">
+            <summary>
+            세션을 생성하기 위한 세션팩토리.
+            풀링의 기능도 가능하게 하기 위해서 Create 와 Release 를 통해서 관리되도록 함
+            </summary>
+        </member>
+        <member name="M:EuNet.Core.ISessionFactory.Create">
+            <summary>
+            세션 생성
+            </summary>
+            <returns>생성된 세션</returns>
+        </member>
+        <member name="M:EuNet.Core.ISessionFactory.Release(EuNet.Core.ISession)">
+            <summary>
+            세션 해제
+            </summary>
+            <param name="session">해제될 세션</param>
+            <returns>성공여부</returns>
+        </member>
+        <member name="M:EuNet.Core.ISessionFactory.ShutdownAsync">
+            <summary>
+            서버가 종료되면 호출됨
+            </summary>
+        </member>
+        <member name="T:EuNet.Core.SessionCreateInfo">
+            <summary>
+            세션 생성시 필요한 정보
+            </summary>
+        </member>
+        <member name="T:EuNet.Core.SessionInitializeInfo">
+            <summary>
+            세션 초기화시 필요한 정보
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.SessionInitializeInfo.AcceptedTcpSocket">
+            <summary>
+            TCP에서 연결요청된 클라이언트 소켓 
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.SessionInitializeInfo.UdpServiceSocket">
+            <summary>
+            서비스중인 UDP 소켓
+            </summary>
+        </member>
+        <member name="T:EuNet.Core.SessionState">
+            <summary>
+            채널 상태
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.SessionState.Initialized">
+            <summary>
+            초기화 되었지만 아직 사용되지 않음
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.SessionState.Connected">
+            <summary>
+            접속이 완료됨
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.SessionState.Closed">
+            <summary>
+            접속이 해제됨
+            </summary>
+        </member>
+        <member name="T:EuNet.Core.ConcurrentObjectPool`1">
+            <summary>
+            스레드 세이프한 오프젝트 풀
+            </summary>
+            <typeparam name="T">클래스 객체</typeparam>
+        </member>
+        <member name="P:EuNet.Core.ConcurrentObjectPool`1.TotalAllocCount">
+            <summary>
+            총 할당 횟수
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.ConcurrentObjectPool`1.AllocCount">
+            <summary>
+            현재 할당된 갯수 (총 할당 횟수 - 총 해제 횟수)
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.ConcurrentObjectPool`1.PoolingCount">
+            <summary>
+            현재 풀링되어 있는 객체 갯수
+            </summary>
+        </member>
+        <member name="M:EuNet.Core.ConcurrentObjectPool`1.#ctor(System.Int32,System.Int32)">
+            <summary>
+            생성자
+            </summary>
+            <param name="count">미리 할당되어 풀링되는 개수</param>
+            <param name="maxCount">최대 풀링 개수</param>
+        </member>
+        <member name="M:EuNet.Core.ConcurrentObjectPool`1.Prepare(System.Int32)">
+            <summary>
+            미리 정해준 개수를 풀링시킨다
+            </summary>
+            <param name="count">풀링시킬 개수</param>
+        </member>
+        <member name="M:EuNet.Core.ConcurrentObjectPool`1.Alloc">
+            <summary>
+            객체를 풀에서 빼서 준다.
+            </summary>
+        </member>
+        <member name="M:EuNet.Core.ConcurrentObjectPool`1.Free(`0)">
+            <summary>
+            객체를 풀에 넣는다.
+            </summary>
+            <param name="obj">풀에 넣을 객체</param>
+        </member>
+        <member name="T:EuNet.Core.DeliveryMethod">
+            <summary>
+            데이터 전송 방법
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.DeliveryMethod.Tcp">
+            <summary>
+            TCP 로 보냄
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.DeliveryMethod.Unreliable">
+            <summary>
+            신뢰할 수 없는 UDP 로 보냄. (소실됨, 중복됨, 순서없음)
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.DeliveryMethod.ReliableUnordered">
+            <summary>
+            신뢰되지만 순서없이 UDP로 보냄 (소실안됨, 중복안됨, 순서없음)
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.DeliveryMethod.Sequenced">
+            <summary>
+            신뢰할 수 없는지만 순서대로 UDP로 보냄 (소실됨, 중복안됨, 순서됨)
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.DeliveryMethod.ReliableOrdered">
+            <summary>
+            신뢰되고 순서를 지키는 UDP로 보냄 (소실안됨, 중복안됨, 순서됨)
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.DeliveryMethod.ReliableSequenced">
+            <summary>
+            신뢰되고 순서를 지키는 UDP로 보냄 (소실됨[마지막 패킷만 소실안됨], 중복안됨, 순서됨)
+            </summary>
+        </member>
+        <member name="T:EuNet.Core.DeliveryTarget">
+            <summary>
+            전송 타겟. P2P 전용
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.DeliveryTarget.All">
+            <summary>
+            나를 포함한 전체 인원을 호출한다
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.DeliveryTarget.Others">
+            <summary>
+            나를 제외한 나머지 인원에 호출한다
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.DeliveryTarget.Master">
+            <summary>
+            마스터만 호출한다
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.DeliveryTarget.Target">
+            <summary>
+            특정 세션 타겟. 세션 아이디를 입력하여 보낸다.
+            </summary>
+        </member>
+        <member name="T:EuNet.Core.INetSerializable">
+            <summary>
+            네트워크 전송을 위한 직렬화 인터페이스
+            이 인터페이스를 상속받아서 구현하면 빠른 직렬화 가능
+            </summary>
+        </member>
+        <member name="T:EuNet.Core.IPool">
+            <summary>
+            풀 인터페이스
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.IPool.TotalAllocCount">
+            <summary>
+            총 할당 횟수
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.IPool.AllocCount">
+            <summary>
+            현재 할당된 갯수 (총 할당 횟수 - 총 해제 횟수)
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.IPool.PoolingCount">
+            <summary>
+            현재 풀링되어 있는 객체 갯수
+            </summary>
+        </member>
+        <member name="T:EuNet.Core.NetPool">
+            <summary>
+            네트워크 풀을 모아놓은 클래스
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetPool.DataWriterPool">
+            <summary>
+            DataWriter Pool
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetPool.PacketPool">
+            <summary>
+            NetPacket Pool
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetPool.BufferPool">
+            <summary>
+            Buffer Pool
+            </summary>
+        </member>
+        <member name="T:EuNet.Core.NetStatistic">
+            <summary>
+            네트워크 통계
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetStatistic.TcpReceivedBytes">
+            <summary>
+            TCP 총 받은 바이트
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetStatistic.UdpReceivedBytes">
+            <summary>
+            UDP 총 받은 바이트
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetStatistic.TcpSentBytes">
+            <summary>
+            TCP 총 보낸 바이트
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetStatistic.UdpSentBytes">
+            <summary>
+            UDP 총 보낸 바이트
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetStatistic.TcpReceivedCount">
+            <summary>
+            TCP 총 받은 개수
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetStatistic.UdpReceivedCount">
+            <summary>
+            UDP 총 받은 개수
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetStatistic.TcpSentCount">
+            <summary>
+            TCP 총 보낸 개수
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetStatistic.UdpSentCount">
+            <summary>
+            UDP 총 보낸 개수
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetStatistic.TcpPacketSentCount">
+            <summary>
+            TCP 총 보낸 Packet 개수
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetStatistic.UdpPacketSentCount">
+            <summary>
+            UDP 총 보낸 Packet 개수
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetStatistic.PacketReceivedCount">
+            <summary>
+            총 받은 Packet 개수
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetStatistic.UdpResentCount">
+            <summary>
+            UDP 다시 보낸 개수.
+            RUDP 사용시 Ack를 시간안에 받지 못하면 재전송함.
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetStatistic.UdpReliablePacketSentCount">
+            <summary>
+            RUDP 보낸 Packet 개수
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetStatistic.UdpPacketLossCount">
+            <summary>
+            UDP 소실된 개수
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetStatistic.UdpSaveSentCount">
+            <summary>
+            UDP 모아서 전송하여 아낀 전송 개수
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetStatistic.UdpFragmentCount">
+            <summary>
+            UDP 데이터가 너무 커서 분할하여 보낸 패킷의 원본 개수
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetStatistic.RelaySendCount">
+            <summary>
+            UDP 릴레이로 데이터를 보낸 개수 (클라이언트)
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetStatistic.RelaySendBytes">
+            <summary>
+            UDP 릴레이로 데이터를 보낸 바이트 (클라이언트)
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetStatistic.RelayServCount">
+            <summary>
+            UDP 릴레이를 처리한 개수 (서버)
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetStatistic.RelayServBytes">
+            <summary>
+            UDP 릴레이를 처리한 바이트 (서버)
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetStatistic.IsGatherRpc">
+            <summary>
+            RPC 통계를 수집할지 여부
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetStatistic._requestRpcMap">
+            <summary>
+            요청한 RPC 맵
+            </summary>
+        </member>
+        <member name="F:EuNet.Core.NetStatistic._responseRpcMap">
+            <summary>
+            요청받은 RPC 맵
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetStatistic.UdpPacketLossPercent">
+            <summary>
+            UDP 패킷 소실 퍼센트 ( 0.0 ~ 100.0 )
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetStatistic.TotalSentCount">
+            <summary>
+            모든 채널로 보낸 총 개수
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetStatistic.TotalReceivedCount">
+            <summary>
+            모든 채널로 받은 총 개수
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetStatistic.TotalSentBytes">
+            <summary>
+            모든 채널로 보낸 총 바이트
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetStatistic.TotalReceivedBytes">
+            <summary>
+            모든 채널로 받은 총 바이트
+            </summary>
+        </member>
+        <member name="P:EuNet.Core.NetStatistic.TotalPacketSentCount">
+            <summary>
+            모든 채널로 보낸 총 Packet 개수
+            </summary>
+        </member>
+    </members>
+</doc>
